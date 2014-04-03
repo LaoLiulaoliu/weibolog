@@ -1,12 +1,15 @@
-Specification
-=============
-You can back up your sina weibo.
-**I use gevent to speed up the crawling, my account was blocked by weibo.cn**
-**So I simulate human click by requests without gevent**
-
-
 Software Infrastructure
 =======================
+
+
+Specification
+=============
+**You can back up your sina weibo.**
+
+*I use gevent to speed up the crawling, my account was blocked by weibo.cn*
+
+*So I simulate human click by requests without gevent*
+
 
 
 Database Consider

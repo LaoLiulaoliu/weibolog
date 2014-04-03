@@ -1,8 +1,8 @@
 Specification
 =============
 You can back up your sina weibo.
-** I use gevent to speed up the crawling, my account was blocked by weibo.cn **
-** So I simulate human click by requests without gevent **
+**I use gevent to speed up the crawling, my account was blocked by weibo.cn**
+**So I simulate human click by requests without gevent**
 
 
 Software Infrastructure
@@ -24,6 +24,7 @@ Logic
 Every weibo item have 4 kinds of div combination
 ------------------------------------------------
 1: get Forward[0] and Content[-1]
+
     <div>Forward</div> class="cmt"
     <div>picture</div>
     <div>Content</div> class="ctt"
@@ -33,6 +34,7 @@ Every weibo item have 4 kinds of div combination
 
 
 2: get Content[0]
+
     <div>Content</div> class="ctt"
     <div>picture</div>
 

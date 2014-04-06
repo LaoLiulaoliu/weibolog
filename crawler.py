@@ -51,6 +51,7 @@ def time_convert(time_str):
 class Crawler(object):
 
     def __init__(self):
+        self.exception = []
         self.url = 'http://weibo.cn/u/'
         self.siteurl = 'http://weibo.cn'
         self.db = DBLayer()
@@ -76,32 +77,26 @@ class Crawler(object):
         html = lxml.html.fromstring(ret.content)
         return html
 
-    def run(self):
-        """
-            crawl user one by one
+    def run(self, update=True):
+        """ crawl user one by one
+
+        :param update: True, only update latest five pages.
         """
         for user in USERS:
-            self.get_userpage(user)
+            self.get_userpage(user, update)
 
-    def get_userpage(self, userid):
-        """
-            update user info
-            get every weibo of user
+        self.crawl_exception()
+
+    def get_userpage(self, userid, update=None):
+        """ update user info, get every weibo of user
         """
         html = self.get_html(self.url + userid)
 
         name, description, weibo_num, follow, fans, page_num = self.get_person_info(html)
         self.db.upd_user(userid, name, description, weibo_num, follow, fans, page_num)
 
-        for weibo in html.cssselect('div.c'):
-            self.get_weibo_item( weibo, userid )
-
-        for page in range(2, page_num+1):
-            link = self.url + userid + '?page=' + str(page)
-            print userid, page
-            html = self.get_html(link)
-            for weibo in html.cssselect('div.c'):
-                self.get_weibo_item( weibo, userid )
+        page_num = 5 if update == True else page_num
+        self.crawl_page(userid, 1, page_num)
 
     def get_person_info(self, html):
         name = html.cssselect('div.u table div.ut .ctt')[0].text
@@ -133,7 +128,7 @@ class Crawler(object):
     def get_weibo_item(self, weibo, userid):
         weiboid = weibo.get('id')
         if weiboid is None: # other 'div.c' element
-            return
+            return 0
         weiboid = weiboid.split('_')[-1] # M_ADpwMx9JE
         div_xpath = weibo.xpath('./div')
         span = div_xpath[0].cssselect('span:first-of-type')[0].get('class')
@@ -173,6 +168,7 @@ class Crawler(object):
 
         if comment_num != 0:
             self.get_comment(weiboid)
+        return 1
 
 
     def get_interact_num(self, node, delete=False):
@@ -295,6 +291,45 @@ class Crawler(object):
 #        self.get_comment('AAsUnzdZl') # 8 comment
 
 
+    def crawl_exception(self, repeat_times=5):
+        """ If one page's weibo is not equal to 10,
+            probably author delete them or network not work well.
+            We record this exception, deal with them when crawling finished.
+
+        """
+        for i in xrange(repeat_times):
+            if not self.exception: break
+
+            excep = self.exception
+            self.exception = []
+            for userid, page, _ in excep:
+                link = self.url + userid + '?page=' + str(page)
+                html = self.get_html(link)
+                count = 0
+                for weibo in html.cssselect('div.c'):
+                    status = self.get_weibo_item( weibo, userid )
+                    count += status
+                if count != 10:
+                    self.exception.append((userid, page, count))
+
+        print 'exception is: ', self.exception
+
+    def crawl_page(self, userid, pagebegin, pageend=None):
+        if pageend == None:
+            pageend = pagebegin
+        for page in range(pagebegin, pageend+1):
+            link = self.url + userid + '?page=' + str(page)
+            html = self.get_html(link)
+            count = 0
+            for weibo in html.cssselect('div.c'):
+                status = self.get_weibo_item( weibo, userid )
+                count += status
+            if count != 10:
+                self.exception.append((userid, page, count))
+            print userid, page, count
+
 
 if __name__ == '__main__':
-    Crawler().unit_test()
+    crawl = Crawler()
+    crawl.unit_test()
+    crawl.crawl_page('11111', 20)

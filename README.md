@@ -20,7 +20,8 @@ I do not like mongodb!
 
 Logic
 -----
-+ If hava data in database, supplement the newer data.
++ If we hava data in database, update as the newer data.
++ If we already crawled data before, only crawl the latest 5 pages.
 
 
 
@@ -47,6 +48,6 @@ we judge the first `div` to see whether this weibo is forward
 
 TODO
 ----
-+ If your weibo account is important, a identifying code image appears. (not implement yet)
++ If your weibo account is important, a identifying code image appears in login time. (not implement yet)
 + If no data in database, add latest 100 weibo in db. (not implement yet)
 + If given a time period, crawl the period time. (not implement yet)

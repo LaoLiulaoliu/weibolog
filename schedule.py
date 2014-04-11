@@ -9,7 +9,7 @@ class Schedule(object):
         self.crawler = Crawler()
 
     def run(self):
-        self.crawler.run(update=False)
+        self.crawler.run(update=True)
 
 if __name__ == '__main__':
     Schedule().run()

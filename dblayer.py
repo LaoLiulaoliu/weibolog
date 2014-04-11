@@ -59,15 +59,15 @@ class DBLayer(object):
         result = dict( zip(result.columns, result.results[0]) )
         update = "update weibo set "
         begin_length = len(update)
-        if attitude_num != result['attitude_num']:
+        if attitude_num > result['attitude_num']:
             update += "attitude_num="+str(attitude_num)+","
-            update += "attitudes=%s," % (attitudes)
+            update += "attitudes=%s,"
 
         update += "comment_num="+str(comment_num)+"," if comment_num != result['comment_num'] else ""
         update += "repost_num="+str(repost_num)+"," if repost_num != result['repost_num'] else ""
         if begin_length != len(update):
-            update = update[:-1] + " where wbid=" + wbid + ";"
-            self.db.execute(update)
+            update = update[:-1] + " where wbid='" + wbid + "';"
+            self.db.execute(update, (attitudes, ))
 
     def upd_comment(self, commentid, wbid, name, uid_, reply, reply_time):
         """

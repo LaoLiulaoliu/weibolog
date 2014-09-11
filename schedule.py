@@ -8,8 +8,15 @@ class Schedule(object):
     def __init__(self):
         self.crawler = Crawler()
 
-    def run(self):
-        self.crawler.run(update=True)
+    def run(self, update=None):
+        self.crawler.run(update)
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(description='run schedule')
+    parser.add_argument('--upd', '-u', type=bool, default=False, help='')
+    option = parser.parse_args()
+    Schedule().run(option.upd)
 
 if __name__ == '__main__':
-    Schedule().run()
+    main()

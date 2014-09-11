@@ -12,6 +12,7 @@ import lxml.html
 from settings import USERS, IMAGE_PATH, TIMEOUT
 from login import Login
 from dblayer import DBLayer
+from region import REGION_CODE
 
 def time_convert(time_str):
     """
@@ -77,10 +78,10 @@ class Crawler(object):
         html = lxml.html.fromstring(ret.content)
         return html
 
-    def run(self, update=True):
+    def run(self, update=None):
         """ crawl user one by one
 
-        :param update: True, only update latest five pages.
+        :param update: True, full updated all pages(comments, etc.).
         """
         for user in USERS:
             self.get_userpage(user, update)
@@ -90,18 +91,28 @@ class Crawler(object):
     def get_userpage(self, userid, update=None):
         """ update user info, get every weibo of user
         """
+        if not userid: return
         html = self.get_html(self.url + userid)
 
-        name, description, weibo_num, follow, fans, page_num = self.get_person_info(html)
-        self.db.upd_user(userid, name, description, weibo_num, follow, fans, page_num)
+        name, sex, province, description, weibo_num, follow, fans, page_num = self.get_person_info(html)
+        self.db.upd_user(userid, name, sex, province, description, weibo_num, follow, fans, page_num)
 
-        page_num = 5 if update == True else page_num
-        self.crawl_page(userid, 1, page_num)
+        self.crawl_page(userid, page_num, update)
 
     def get_person_info(self, html):
-        name = html.cssselect('div.u table div.ut .ctt')[0].text
+        info = html.cssselect('div.u table div.ut .ctt')[0].text_content().split()
+        name = info[0]
+        # name = html.cssselect('div.u table div.ut .ctt')[0].text
         if name.find('[') != -1: # [在线]
             name = name[:name.find('[')]
+        for i in info[1:]:
+            if '/' in i:
+                sex, province = i.split('/')
+                sex = True if sex == u'\u7537' else False
+                province = REGION_CODE[province]['code']
+                break
+        else:
+            sex = province = None
 
         desc = html.cssselect('div.u table div.ut .ctt')
         desc.pop(0)
@@ -117,13 +128,13 @@ class Crawler(object):
         weibo_num = weibo_num[weibo_num.find('[')+1:weibo_num.find(']')]
         for ia in statistics.cssselect('a'):
             link = ia.get('href')
-            if 'follow?' in link:
+            if '/follow' in link:
                 follow = ia.text_content()
                 follow = follow[follow.find('[')+1:follow.find(']')]
-            elif 'fans?' in link:
+            elif '/fans' in link:
                 fans = ia.text_content()
                 fans = fans[fans.find('[')+1:fans.find(']')]
-        return name, description, int(weibo_num), int(follow), int(fans), int(page_num)
+        return name, sex, province, description, int(weibo_num), int(follow), int(fans), int(page_num)
 
     def get_weibo_item(self, weibo, userid):
         weiboid = weibo.get('id')
@@ -136,15 +147,13 @@ class Crawler(object):
             is_forward = True
         elif span == 'ctt':
             is_forward = False
+        elif span == 'kt': # 置顶
+            is_forward = False
         else:
              raise Exception("Exception of weibo element div: {}, {}".format(userid, weiboid))
 
         attitude_num, repost_num, comment_num = self.get_interact_num(div_xpath[-1], delete=True)
-        public_info = div_xpath[-1].cssselect('span.ct')[0]
-        pubtime, device = public_info.text_content().split(u'来自')
-        pubtime, device = pubtime.strip(), device.strip()
-        pubtime = time_convert(pubtime)
-        public_info.drop_tree()
+        pubtime, device = self.get_pubtime_device(div_xpath[-1])
 
         if is_forward:
             forward = div_xpath[0].xpath('./span[@class="ctt"]')[0].text_content()
@@ -171,7 +180,7 @@ class Crawler(object):
         return 1
 
 
-    def get_interact_num(self, node, delete=False):
+    def get_interact_num(self, node, delete=True):
         attitude_num, repost_num, comment_num = None, 0, 0
         for ia in node.xpath('./a[@href]'):
             link = ia.get('href')
@@ -197,6 +206,13 @@ class Crawler(object):
             if delete: ia.drop_tree()
         return attitude_num, repost_num, comment_num
 
+    def get_pubtime_device(self, node):
+        public_info = node.cssselect('span.ct')[0]
+        pubtime, device = public_info.text_content().split(u'来自')
+        pubtime, device = pubtime.strip(), device.strip()
+        pubtime = time_convert(pubtime)
+        public_info.drop_tree()
+        return pubtime, device
 
     def get_attitude(self, weiboid):
         attitudes = []
@@ -242,7 +258,10 @@ class Crawler(object):
         try:
             ret = self.session.get('http://weibo.cn/mblog/picAll/' + weiboid, timeout=TIMEOUT)
         except:
-            ret = self.session.get('http://weibo.cn/mblog/picAll/' + weiboid, timeout=TIMEOUT)
+            try:
+                ret = self.session.get('http://weibo.cn/mblog/picAll/' + weiboid, timeout=TIMEOUT)
+            except:
+                ret = self.session.get('http://weibo.cn/mblog/picAll/' + weiboid, timeout=TIMEOUT)
         picurls = re.findall('<a href="([0-9a-zA-Z/?=&]+?)">原图</a>', ret.content)
         path_prefix = os.path.join(IMAGE_PATH, weiboid + '_')
         saved_imgs = glob.glob(path_prefix + '*')
@@ -296,7 +315,12 @@ class Crawler(object):
             probably author delete them or network not work well.
             We record this exception, deal with them when crawling finished.
 
+            After repeat times crawling of that page,
+            if all the number of weibo in that page are the same,
+            we judge that author delete some weibo in that page and the crawler is right.
         """
+        ruler = { '_'.join( (userid, str(page)) ): [count] for userid, page, count in self.exception }
+
         for i in xrange(repeat_times):
             if not self.exception: break
 
@@ -310,14 +334,42 @@ class Crawler(object):
                     status = self.get_weibo_item( weibo, userid )
                     count += status
                 if count != 10:
+                    ruler['_'.join( (userid, str(page)) )].append(count)
                     self.exception.append((userid, page, count))
 
+        excep = self.exception
+        for u, p, c in excep:
+            key = '_'.join( (u, str(p)) )
+            if c > 0 and ruler[key].count(c) == len(ruler[key]):
+                self.exception.remove( (u, p, c) )
         print 'exception is: ', self.exception
+        print 'ruler is: ', ruler
 
-    def crawl_page(self, userid, pagebegin, pageend=None):
-        if pageend == None:
-            pageend = pagebegin
-        for page in range(pagebegin, pageend+1):
+    def crawl_page(self, userid, pagenum, update):
+        if update != True:
+            # When not fully updated,
+            # get last weibo public time in db,
+            # if there is no weibo has been crawled, fully crawling.
+            # else crawl weibo which public time greater than last weibo.
+            upd = self.db.latest_public_time(userid)
+            if upd != False:
+                for page in range(1, pagenum+1, 1):
+                    link = self.url + userid + '?page=' + str(page)
+                    html = self.get_html(link)
+                    for weibo in reversed( html.cssselect('div.c') ):
+                        weiboid = weibo.get('id')
+                        if weiboid is None: # other 'div.c' element
+                            continue
+                        div_xpath = weibo.xpath('./div')
+                        pubtime, device = self.get_pubtime_device(div_xpath[-1])
+                        break
+                    if pubtime > upd:
+                        continue
+                    else:
+                        pagenum = page
+                        break
+
+        for page in range(pagenum, 0, -1):
             link = self.url + userid + '?page=' + str(page)
             html = self.get_html(link)
             count = 0
@@ -326,6 +378,8 @@ class Crawler(object):
                 count += status
             if count != 10:
                 self.exception.append((userid, page, count))
+                if sum( [i[-1] for i in self.exception[-10:]] ) == 0:
+                    time.sleep(300)
             print userid, page, count
 
 

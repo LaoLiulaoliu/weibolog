@@ -3,6 +3,7 @@
 # Author: Yuande Liu <miracle (at) gmail.com>
 
 import os
+from weibosecret import user, password, blacklist
 
 ROOT_PATH = os.path.abspath(os.path.dirname(__file__))
 
@@ -13,22 +14,30 @@ if ENV == '':
 
 envs = {
     'DEV': {
-        'USERNAME': 'weibo_login_name',
-        'PASSWORD': 'XXXXXX',
-        'USERS': [
-            '1839754451',
-        ],
-        'IMAGE_PATH': './',
+        'USERNAME': user,
+        'PASSWORD': password,
+        'USERS': blacklist,
+        'IMAGE_PATH': './img',
         'TIMEOUT': 60,
         'DBNAME': 'weibolog',
     },
     'PRODUCTION': {
-        'USERNAME': 'weibo_login_name',
-        'PASSWORD': 'XXXXXX',
+        'USERNAME': user,
+        'PASSWORD': password,
+        'USERS': [
+            '',
+        ],
+        'IMAGE_PATH': './img',
+        'TIMEOUT': 60,
+        'DBNAME': 'weibolog',
+    },
+    'TEST': {
+        'USERNAME': user,
+        'PASSWORD': password,
         'USERS': [
             '1839754451',
         ],
-        'IMAGE_PATH': './img',
+        'IMAGE_PATH': './',
         'TIMEOUT': 60,
         'DBNAME': 'weibolog',
     },

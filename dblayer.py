@@ -10,19 +10,19 @@ class DBLayer(object):
     def __init__(self):
         self.db = DBUtils(DBNAME)
 
-    def upd_user(self, uid, name, description, weibo_num, follow, fans, page_num):
+    def upd_user(self, uid, name, sex, province, description, weibo_num, follow, fans, page_num):
         """
         If user not in db, insert user info.
         If user in db, update what changes.
         """
-        result = self.db.execute("select uid, name, description, weibo_num, follow, fans, page_num from person where uid=%s;",
+        result = self.db.execute("select uid, name, sex, province, description, weibo_num, follow, fans, page_num from person where uid=%s;",
                 (uid,),
                 result=True)
 
         if not result.results:
-            self.db.execute("insert into person (uid, name, description, weibo_num, follow, fans, page_num) \
-                    values (%s,%s,%s,%s,%s,%s,%s)",
-                    (uid, name, description, weibo_num, follow, fans, page_num))
+            self.db.execute("insert into person (uid, name, sex, province, description, weibo_num, follow, fans, page_num) \
+                    values (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                    (uid, name, sex, province, description, weibo_num, follow, fans, page_num))
             return
 
         name = name.encode('utf-8')
@@ -31,6 +31,8 @@ class DBLayer(object):
         update = "update person set "
         begin_length = len(update)
         update += "name='"+name+"'," if name != result['name'] else ""
+        update += "sex="+str(sex).lower()+"," if sex != result['sex'] else ""
+        update += "province="+str(province)+"," if province != result['province'] else ""
         update += "description='"+description+"'," if description != result['description'] else ""
         update += "weibo_num="+str(weibo_num)+"," if weibo_num != result['weibo_num'] else ""
         update += "follow="+str(follow)+"," if follow != result['follow'] else ""
@@ -67,7 +69,10 @@ class DBLayer(object):
         update += "repost_num="+str(repost_num)+"," if repost_num != result['repost_num'] else ""
         if begin_length != len(update):
             update = update[:-1] + " where wbid='" + wbid + "';"
-            self.db.execute(update, (attitudes, ))
+            if 'attitudes=%s' in update:
+                self.db.execute(update, (attitudes, ))
+            else:
+                self.db.execute(update)
 
     def upd_comment(self, commentid, wbid, name, uid_, reply, reply_time):
         """
@@ -85,3 +90,12 @@ class DBLayer(object):
                     (commentid, wbid, name, uid_, reply, reply_time))
             return
 
+
+    def latest_public_time(self, uid):
+        """ select one account's latest weibo public time,
+            If this user is not been crawled before, return False
+        """
+        ret = self.db.execute('select pubtime from weibo where uid=%s order by pubtime desc limit 1;',
+                              (uid,),
+                              result=True)
+        return False if ret.results == [] else ret.results[0][0]

@@ -86,7 +86,7 @@ class Crawler(object):
         for user in USERS:
             self.get_userpage(user, update)
 
-        self.crawl_exception()
+            self.crawl_exception()
 
     def get_userpage(self, userid, update=None):
         """ update user info, get every weibo of user

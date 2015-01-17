@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 # Author: Yuande Liu <miracle (at) gmail.com>
 
-from pgutils import DBUtils
+from pgwrapper import PGWrapper
 from settings import DBNAME
 
-class DBLayer(object):
+class DBLayer(PGWrapper):
 
-    def __init__(self):
-        self.db = DBUtils(DBNAME)
+    def __init__(self, db=DBNAME):
+        super(DBLayer, self).__init__(db)
 
     def upd_user(self, uid, name, sex, province, description, weibo_num, follow, fans, page_num):
         """
@@ -99,3 +99,4 @@ class DBLayer(object):
                               (uid,),
                               result=True)
         return False if ret.results == [] else ret.results[0][0]
+

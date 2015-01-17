@@ -10,10 +10,10 @@ from contextlib import contextmanager
 
 QueryResult = namedtuple('RowResult', ('columns', 'results'))
 
-class DBUtils(object):
+class PGPool(object):
 
     def __init__(self, dbname='postgres',
-                 user='bishop',
+                 user='postgres',
                  poolsize=3,
                  maxretries=5,
                  fetch_size=400):

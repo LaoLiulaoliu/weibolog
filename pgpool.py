@@ -100,7 +100,7 @@ class PGPool(object):
             True for `select`, False for `insert` and `update`
         """
         with self.connection() as cur:
-            print(cur.mogrify(query, vars))
+#            print(cur.mogrify(query, vars))
             resp = cur.execute(query, vars)
 
             if result == False:

@@ -346,6 +346,8 @@ class Crawler(object):
         print 'ruler is: ', ruler
 
     def crawl_page(self, userid, pagenum, update):
+        """ page=1 is today weibo
+        """
         if update != True:
             # When not fully updated,
             # get last weibo public time in db,

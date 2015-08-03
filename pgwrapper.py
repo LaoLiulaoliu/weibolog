@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # Author: Yuande Liu <miracle (at) gmail.com>
 
-import collections
 from pgpool import PGPool
 
 
@@ -15,7 +14,7 @@ class PGWrapper(object):
         """ General select form of select
         Usage::
 
-            >>> .select('hospital', 'id, city', control='limit 1')
+            >>> select('hospital', 'id, city', control='limit 1')
             select id, city from hospital limit 1;
 
 
@@ -112,6 +111,8 @@ class PGWrapper(object):
         elif isinstance(condition, dict):
             conditions = []
             for k, v in condition.iteritems():
+                if isinstance(v, unicode):
+                    v = v.encode('utf-8')
                 s = "{}='{}'".format(k, v) if isinstance(v, bytes) else "{}={}".format(k, v)
                 conditions.append(s)
             sql = " where {}".format(', '.join(conditions))

@@ -19,6 +19,7 @@ envs = {
         'USERS': blacklist,
         'IMAGE_PATH': './img',
         'TIMEOUT': 60,
+        'POSTGRES_HOST': '127.0.0.1',
         'DBNAME': 'weibolog',
     },
     'PRODUCTION': {
@@ -29,6 +30,7 @@ envs = {
         ],
         'IMAGE_PATH': './img',
         'TIMEOUT': 60,
+        'POSTGRES_HOST': '127.0.0.1',
         'DBNAME': 'weibolog',
     },
     'TEST': {
@@ -39,6 +41,7 @@ envs = {
         ],
         'IMAGE_PATH': './',
         'TIMEOUT': 60,
+        'POSTGRES_HOST': '127.0.0.1',
         'DBNAME': 'weibolog',
     },
 }

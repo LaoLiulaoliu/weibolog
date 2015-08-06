@@ -5,9 +5,9 @@
 from pgpool import PGPool
 
 
-class PGWrapper(object):
+class PGWrapper(PGPool):
     def __init__(self, dbname='postgres'):
-        self.db = PGPool(dbname)
+        super(PGWrapper, self).__init__(dbname)
 
 
     def select(self, table, args='*', condition=None, control=None):
@@ -24,7 +24,7 @@ class PGWrapper(object):
         """
         sql = 'select {} from {}'.format(args, table)
         sql += self.parse_condition(condition) + (' {};'.format(control) if control else ';')
-        return self.db.execute(sql, result=True).results
+        return super(PGWrapper, self).execute(sql, result=True).results
 
 
     def update(self, table, kwargs, condition=None):
@@ -55,7 +55,7 @@ class PGWrapper(object):
 
         sql = sql.format(table, ', '.join(equations))
         sql += self.parse_condition(condition) + ";"
-        self.db.execute(sql, values, result=False)
+        super(PGWrapper, self).execute(sql, values, result=False)
 
 
     def insert(self, table, kwargs):
@@ -70,7 +70,7 @@ class PGWrapper(object):
         keys, values = [], []
         [ (keys.append(k), values.append(v)) for k, v in kwargs.iteritems() ]
         sql = sql.format(', '.join(keys), ', '.join(['%s']*len(values)))
-        self.db.execute(sql, values, result=False)
+        super(PGWrapper, self).execute(sql, values, result=False)
 
 
     def delete(self, table, condition):
@@ -83,7 +83,7 @@ class PGWrapper(object):
         """
         sql = "delete from {}".format(table)
         sql += self.parse_condition(condition) + ";"
-        self.db.execute(sql, result=False)
+        super(PGWrapper, self).execute(sql, result=False)
 
 
     def insert_inexistence(self, table, kwargs, condition):
@@ -100,7 +100,7 @@ class PGWrapper(object):
         keys, values = [], []
         [ (keys.append(k), values.append(v)) for k, v in kwargs.iteritems() ]
         sql = sql.format(', '.join(keys)) + select.format( ', '.join(['%s']*len(values)) ) + condition
-        self.db.execute(sql, values, result=False)
+        super(PGWrapper, self).execute(sql, values, result=False)
 
 
     def parse_condition(self, condition):
@@ -136,5 +136,29 @@ class PGWrapper(object):
                                                                 field=field,
                                                                 join_table=join_table,
                                                                 join_field=join_field)
-        return self.db.execute(sql, result=True).results
+        return super(PGWrapper, self).execute(sql, result=True).results
+
+
+    def joint(self, table, fields,
+                    join_table, join_fields,
+                    condition_field, condition_join_field,
+                    join_method='left_join'):
+        """
+        """
+        import string
+        fields = map(string.strip, fields.split(','))
+        select = ', '.join( ['u.{}'.format(field) for field in fields] )
+        join_fields = map(string.strip, join_fields.split(','))
+        join_select = ', '.join( ['v.{}'.format(field) for field in join_fields] )
+
+        sql = "select {select}, {join_select} from {table} as u {join_method}"\
+               " {join_table} as v on u.{condition_field}="\
+               "v.{condition_join_field}".format(select=select,
+                                                 join_select=join_select,
+                                                 table=table,
+                                                 join_method=join_method,
+                                                 join_table=join_table,
+                                                 condition_field=condition_field,
+                                                 condition_join_field=condition_join_field)
+        return super(PGWrapper, self).execute(sql, result=True).results
 

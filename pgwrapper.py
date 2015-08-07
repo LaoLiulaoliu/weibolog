@@ -144,6 +144,11 @@ class PGWrapper(PGPool):
                     condition_field, condition_join_field,
                     join_method='left_join'):
         """
+        Usage::
+
+            >>> joint('user', 'name, id_number', 'medical_card', 'number', 'id', 'user_id', 'inner_join')
+            select u.name, u.id_number, v.number from user as u inner join medical_card as v on u.id=v.user_id;
+
         """
         import string
         fields = map(string.strip, fields.split(','))
@@ -153,7 +158,7 @@ class PGWrapper(PGPool):
 
         sql = "select {select}, {join_select} from {table} as u {join_method}"\
                " {join_table} as v on u.{condition_field}="\
-               "v.{condition_join_field}".format(select=select,
+               "v.{condition_join_field};".format(select=select,
                                                  join_select=join_select,
                                                  table=table,
                                                  join_method=join_method,

@@ -15,12 +15,12 @@ class DBLayer(PGWrapper):
         If user not in db, insert user info.
         If user in db, update what changes.
         """
-        result = self.db.execute("select uid, name, sex, province, description, weibo_num, follow, fans, page_num from person where uid=%s;",
+        result = super(DBLayer, self).execute("select uid, name, sex, province, description, weibo_num, follow, fans, page_num from person where uid=%s;",
                 (uid,),
                 result=True)
 
         if not result.results:
-            self.db.execute("insert into person (uid, name, sex, province, description, weibo_num, follow, fans, page_num) \
+            super(DBLayer, self).execute("insert into person (uid, name, sex, province, description, weibo_num, follow, fans, page_num) \
                     values (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                     (uid, name, sex, province, description, weibo_num, follow, fans, page_num))
             return
@@ -40,19 +40,19 @@ class DBLayer(PGWrapper):
         update += "page_num="+str(page_num)+"," if page_num != result['page_num'] else ""
         if begin_length != len(update):
             update = update[:-1] + " where uid='" + uid + "';"
-            self.db.execute(update)
+            super(DBLayer, self).execute(update)
 
     def upd_weibo(self, wbid, uid, content, pubtime, device, pictures, attitude_num, attitudes, comment_num, repost_num, forward=None, uid_=None):
         """
         If weibo not in db, insert weibo.
         If weibo in db, only update the fields that can be changed.
         """
-        result = self.db.execute("select wbid, uid, content, forward, uid_, pubtime, device,\
+        result = super(DBLayer, self).execute("select wbid, uid, content, forward, uid_, pubtime, device,\
             pictures, attitude_num, attitudes, comment_num, repost_num from weibo where wbid=%s;",
             (wbid,),
             result=True)
         if not result.results:
-            self.db.execute("insert into weibo (wbid, uid, content, forward, uid_, pubtime,\
+            super(DBLayer, self).execute("insert into weibo (wbid, uid, content, forward, uid_, pubtime,\
                 device, pictures, attitude_num, attitudes, comment_num, repost_num) values \
                 (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                 (wbid, uid, content, forward, uid_, pubtime, device, pictures,
@@ -70,9 +70,9 @@ class DBLayer(PGWrapper):
         if begin_length != len(update):
             update = update[:-1] + " where wbid='" + wbid + "';"
             if 'attitudes=%s' in update:
-                self.db.execute(update, (attitudes, ))
+                super(DBLayer, self).execute(update, (attitudes, ))
             else:
-                self.db.execute(update)
+                super(DBLayer, self).execute(update)
 
     def upd_comment(self, commentid, wbid, name, uid_, reply, reply_time):
         """
@@ -80,12 +80,12 @@ class DBLayer(PGWrapper):
         If comment in db, not touch it.
         If comment delete from weibo, not touch it in our db.
         """
-        result = self.db.execute("select commentid, wbid, name, uid_, reply, reply_time \
+        result = super(DBLayer, self).execute("select commentid, wbid, name, uid_, reply, reply_time \
                 from comment where commentid=%s;",
                 (commentid,),
                 result=True)
         if not result.results:
-            self.db.execute("insert into comment (commentid, wbid, name, uid_, reply,\
+            super(DBLayer, self).execute("insert into comment (commentid, wbid, name, uid_, reply,\
                 reply_time) values (%s,%s,%s,%s,%s,%s)",
                     (commentid, wbid, name, uid_, reply, reply_time))
             return
@@ -95,7 +95,7 @@ class DBLayer(PGWrapper):
         """ select one account's latest weibo public time,
             If this user is not been crawled before, return False
         """
-        ret = self.db.execute('select pubtime from weibo where uid=%s order by pubtime desc limit 1;',
+        ret = super(DBLayer, self).execute('select pubtime from weibo where uid=%s order by pubtime desc limit 1;',
                               (uid,),
                               result=True)
         return False if ret.results == [] else ret.results[0][0]

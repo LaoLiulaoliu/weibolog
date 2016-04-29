@@ -41,7 +41,7 @@ class Login(object):
 #        'capId': '2_ccbdc8398cb418de',
     }
 
-    posturl = 'http://login.weibo.cn/login/?rand=1759580283&backURL=http%3A%2F%2Fweibo.cn&backTitle=%E6%89%8B%E6%9C%BA%E6%96%B0%E6%B5%AA%E7%BD%91&vt=4'
+#    posturl = 'http://login.weibo.cn/login/?rand=1759580283&backURL=http%3A%2F%2Fweibo.cn&backTitle=%E6%89%8B%E6%9C%BA%E6%96%B0%E6%B5%AA%E7%BD%91&vt=4'
 
     def __init__(self):
         self._login = None
@@ -62,7 +62,12 @@ class Login(object):
             self.data[i.get('name')] = i.get('value')
         self.data[password] = PASSWORD
 
-        self.session.post(self.posturl, data=self.data)
+        posturl = self.loginurl + html.cssselect('.c form[method=post]')[0].get('action')
+
+        print('http://weibo.cn/interface/f/ttt/captcha/show.php?cpt={}'.format(self.data['capId']))
+        self.data['code'] = raw_input('input captcha code: ')
+
+        self.session.post(posturl, data=self.data)
         self._login = True
 
     def get_login_session(self):
